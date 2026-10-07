@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: agentflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agentflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-agentflow}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - agentflow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: agentflow-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_JSON: ${LOG_JSON:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      # Inside Docker the database host is the service name "db", on its internal port 5432.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-agentflow}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-agentflow}
+    ports:
+      - "8000:8000"
+
+  # Development-style image (Vite dev server). A production build served by nginx comes in Phase 12.
+  frontend:
+    build: ./frontend
+    container_name: agentflow-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_PROXY_TARGET: http://backend:8000
+    ports:
+      - "5173:5173"
+
+volumes:
+  agentflow_pgdata:

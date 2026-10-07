@@ -1,0 +1,34 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+
+# Runtime data (uploads, agent workspaces, generated files)
+workspace/
+uploads/
+data/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
